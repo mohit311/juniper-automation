@@ -1,0 +1,96 @@
+---
+- name: ZTP
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+
+  tasks:
+    - name: 1-EXECUTE INITIAL BOOTSTRAP SCRIPT
+      shell: 'python /root/ansible_examples/ZTP/bootstrap_initial.py'
+      delegate_to: localhost
+      run_once: true 
+      register: bootstrap
+
+    - name: 1-DISPLAY BOOTSTRAP CONFIG RESULT
+      debug:
+        msg: "{{ bootstrap.stdout_lines[0] }}"
+
+
+    - name: 2-EXECUTE JunOS CODE TRANSFER SCRIPT ON BOTH REs
+      shell: 'python /root/ansible_examples/ZTP/transfer_junos_file.py'
+      when: bootstrap.stdout_lines[0] == "Configuration Successful"
+      delegate_to: localhost
+      run_once: true
+      register: code_transfer
+
+    - name: 2-DISPLAY FILE TRANSFER RESULT ON BOTH REs
+      debug:
+        msg: "{{ code_transfer.stdout_lines[0] }}"
+
+      
+    - name: 3-EXECUTE JUNOS UPGRADE
+      shell: 'python /root/ansible_examples/ZTP/junos_upgrade.py'
+      when: code_transfer.stdout_lines[0] == "File Transfer Successful on both REs"
+      delegate_to: localhost
+      run_once: true
+      register: junos_upgrade
+
+    - name: 3-DISPLAY JUNOS UPGRADE RESULT
+      debug:
+        msg: "{{ junos_upgrade.stdout_lines[0] }}"
+
+
+    - name: 4-EXECUTE BOOTSTRAP CONFIG WITH SSH
+      shell: 'python /root/ansible_examples/ZTP/bootstrap_ssh.py'
+      when: junos_upgrade.stdout_lines[0] == "JunOS Upgrade is successful to 17.1R2.7"
+      delegate_to: localhost
+      run_once: true
+      register: bootstrap_ssh
+
+    - name: 4-DISPLAY SSH BOOTSTRAP RESULT
+      debug:
+        msg: "{{ bootstrap_ssh.stdout_lines[0] }}"
+
+    
+    - name: 5-TRANSFER BASECONFIG FROM REMOTE SERVER
+      get_url:
+        url: ftp://<username:pwd>@192.168.127.238/mx104_baseconfig.conf
+        dest: /root/ansible_examples/ZTP/
+      when: bootstrap_ssh.stdout_lines[0] == "Bootstrap with SSH Configuration is Successful"
+      register: baseconfig_transfer
+
+    - name: 5-DISPLAY BASECONFIG TRANSFER RESULT
+      debug:
+         msg: "Baseconfig Pulled Successfully from Remote Server"
+
+
+    - pause:
+         seconds: 10
+
+
+    - name: 6-TRANSFER BASECONFIG TO ROUTER
+      shell: sshpass -p "<pwd>" scp -o StrictHostKeyChecking=no mx104_baseconfig.conf write@192.168.124.39:/var/home/write/
+      register: scp_baseconfig_transfer
+
+    - name: 6-DISPLAY BASECONFIG TRANSFER RESULT TO ROUTER
+      debug:
+         msg: " Baseconfig Transferred Successfully to Router "
+
+
+    - pause:
+         seconds: 20
+
+
+    - name: 7-LOAD BASECONFIG ON ROUTER
+      shell: 'python /root/ansible_examples/ZTP/load_baseconfig.py'
+      delegate_to: localhost
+      run_once: true
+      register: baseconfig_load
+
+    - name: 7-DISPLAY LOAD BASECONFIG RESULT
+      debug:
+        msg: "{{ baseconfig_load.stdout_lines[0] }}"
+
+
+
