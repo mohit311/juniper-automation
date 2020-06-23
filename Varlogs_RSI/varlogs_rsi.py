@@ -41,7 +41,7 @@ with Device(host=router_ip, user=dev_username, passwd=dev_password, port='830') 
     print(hostname)
     if (dev.facts['RE0'] == None or dev.facts['RE0']['mastership_state'] == 'Present') and (dev.facts['RE1']['mastership_state']) == 'master':
         print ("Only RE1 is Available on this Router")
-        with StartShell(dev, timeout=50) as ss:
+        with StartShell(dev, timeout=100) as ss:
             if ss.run('cli', '>')[0]:
                 ss.run('request support information | save RSI_' + hostname + '_' + current_date + '.txt', '>')
                 ss.run('file archive compress source /var/log/* destination re1_var_logs' + '_' + hostname + '_' + current_date + '.tgz', '>')
@@ -69,7 +69,7 @@ with Device(host=router_ip, user=dev_username, passwd=dev_password, port='830') 
             sftp.get(remoteFilePath2, localFilePath2)
     elif (dev.facts['RE1'] == None or dev.facts['RE1']['mastership_state'] == 'Present') and (dev.facts['RE0']['mastership_state']) == 'master':
         print ("Only RE0 is Available on Router")
-        with StartShell(dev, timeout=300) as ss:
+        with StartShell(dev, timeout=100) as ss:
             if ss.run('cli', '>')[0]:
                 ss.run('request support information | save RSI_' + hostname + '_' + current_date + '.txt', '>')
                 ss.run('file archive compress source /var/log/* destination re0_var_logs' + '_' + hostname + '_' + current_date + '.tgz', '>')
@@ -98,7 +98,7 @@ with Device(host=router_ip, user=dev_username, passwd=dev_password, port='830') 
             sftp.get(remoteFilePath2, localFilePath2)
     elif (dev.facts['RE0']['mastership_state']) == 'master' and (dev.facts['RE1']['mastership_state']) == 'backup':
         print("RE0 is Master and RE1 is Backup RE")
-        with StartShell(dev, timeout=60) as ss:
+        with StartShell(dev, timeout=100) as ss:
             if ss.run('cli', '>')[0]:
                 print(ss.run('request support information | save RSI_' + hostname + '_' + current_date + '.txt', '>'))
                 print(ss.run('file archive compress source /var/log/* destination re0_var_logs' + '_' + hostname + '_' + current_date + '.tgz', '>'))
@@ -140,7 +140,7 @@ with Device(host=router_ip, user=dev_username, passwd=dev_password, port='830') 
         ss.close()
     elif (dev.facts['RE0']['mastership_state']) == 'backup' and (dev.facts['RE1']['mastership_state']) == 'master':
         print("RE1 is Master and RE0 is Backup RE")
-        with StartShell(dev, timeout=50) as ss:
+        with StartShell(dev, timeout=100) as ss:
             if ss.run('cli', '>')[0]:
                 print(ss.run('request support information | save RSI_' + hostname + '_' + current_date + '.txt', '>'))
                 print(ss.run('file archive compress source /var/log/* destination re1_var_logs' + '_' + hostname + '_' + current_date + '.tgz', '>'))
